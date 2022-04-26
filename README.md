@@ -1,2 +1,2 @@
-# Figthing-game-JavaScript
+# Fighting-game-JavaScript
 First Project JavaScript
