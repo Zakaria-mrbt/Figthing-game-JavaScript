@@ -39,7 +39,7 @@ const torch2 = new Sprite ({
 
 const player = new Fighter({
     position: {
-        x: 0,
+        x: -50,
         y: 0
     },
     velocity: {
@@ -55,19 +55,48 @@ const player = new Fighter({
     imageSrc: './img/player1/Sprites/Idle.png',
     framesMax : 11,  
     scale: 2.5,
-    offset : {x: 10, y: 58},
+    offset : {x: 0, y: 58},
+
+    
     sprites: {
         idle: {
             imageSrc: './img/player1/Sprites/Idle.png',
-            framesMax : 11,
+            framesMax : 11
         },
         run: {  
             imageSrc: './img/player1/Sprites/Run.png',
-            framesMax : 8,
-            image: new Image() 
-
+            framesMax : 8
+        },
+        jump: {  
+            imageSrc: './img/player1/Sprites/Jump.png',
+            framesMax : 4
+        },
+        fall: {
+            imageSrc: './img/player1/Sprites/Fall.png',
+            framesMax : 4
+        },
+        attack: {
+            imageSrc: './img/player1/Sprites/Attack.png',
+            framesMax : 6
+        },
+        takeHit: {
+            imageSrc: './img/player1/Sprites/Takehit.png',
+            framesMax : 4
+        },
+        death: {
+            imageSrc: './img/player1/Sprites/Death.png',
+            framesMax : 9
         }
+    },
+    attackBox: {
+        offset: {
+            x: 50,
+            y: 0
+        },
+        width: 100,
+        height: 50
     }
+    
 })
 
 
@@ -76,8 +105,8 @@ const player = new Fighter({
 
 const enemy = new Fighter({
     position: {
-        x: 400,
-        y: 100
+        x: 750,
+        y: 0
     },
     velocity: {
         x: 0,
@@ -85,9 +114,56 @@ const enemy = new Fighter({
     },
     color: 'blue',
     offset: {
-        x: -50,
+        x: 0,
         y: 0
+    },
+
+    imageSrc: './img/player2/Sprites/Idle.png',
+    framesMax : 11,  
+    scale: 2,
+    offset : {x: 0, y: 78},
+
+    
+    sprites: {
+        idle: {
+            imageSrc: './img/player2/Sprites/Idle.png',
+            framesMax : 11
+        },
+        run: {  
+            imageSrc: './img/player2/Sprites/Run.png',
+            framesMax : 8
+        },
+        jump: {  
+            imageSrc: './img/player2/Sprites/Jump.png',
+            framesMax : 3
+        },
+        fall: {
+            imageSrc: './img/player2/Sprites/Fall.png',
+            framesMax : 3
+        },
+        attack: {
+            imageSrc: './img/player2/Sprites/Attack1.png',
+            framesMax : 7
+        },
+        takeHit: {
+            imageSrc: './img/player2/Sprites/Takehit.png',
+            framesMax : 4
+        },
+        death: {
+            imageSrc: './img/player2/Sprites/Death.png',
+            framesMax : 11
+        }
+
+    },
+    attackBox: {
+        offset: {
+            x: -70,
+            y: 0
+        },
+        width: 100,
+        height: 50
     }
+    
 })
 
 console.log(player)
@@ -118,50 +194,100 @@ function animate() {
     background.update()
     torch1.update()
     torch2.update()
+    //background white opacity
+    // c.fillStyle= 'rgba(255, 255, 255, 0.1'
+    // c.fillRect(0, 0, canvas.width, canvas.height)
     player.update()
-    // enemy.update()
+
+    enemy.update()
 
     player.velocity.x = 0
     enemy.velocity.x = 0
 
     // player movement
-    player.image = player.sprites.idle.image
+    
     if (keys.q.pressed && player.lastKey === 'q') {
         player.velocity.x = -5
-        player.image = player.sprites.run.image
+        player.switchSprite('run')
     } else if (keys.d.pressed && player.lastKey === 'd') {
         player.velocity.x = 5
-        player.image = player.sprites.run.image
+        player.switchSprite('run')
+    }
+    else{
+        player.switchSprite('idle')
+    }
+    //jumping
+    if (player.velocity.y < 0){
+        player.switchSprite('jump')
+        
+    } else if (player.velocity.y > 0) {
+        player.switchSprite('fall')
     }
 
     // enemy movement
     if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') {
         enemy.velocity.x = -5
+        enemy.switchSprite('run')
     } else if (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight') {
         enemy.velocity.x = 5
+        enemy.switchSprite('run')
+    }
+    else{
+        enemy.switchSprite('idle')
     }
 
-    // detect for collision
+     //jumping
+     if (enemy.velocity.y < 0){
+        enemy.switchSprite('jump')
+        
+    } else if (player.velocity.y > 0) {
+        enemy.switchSprite('fall')
+    }
+
+    // detect for collision & enemy get hit
     if ( 
         retangularCollision({
             rectangle1: player,
             rectangle2: enemy
-        })
-        && player.isAttacking) {
+        }) &&
+         player.isAttacking && 
+         player.framesCurrent === 4
+        ) {
+        enemy.takeHit()
         player.isAttacking = false
-        enemy.health -= 20
-        document.querySelector('#enemyHealth').style.width = enemy.health + '%'
+
+        
+        gsap.to('#enemyHealth',{
+            width: enemy.health + '%'
+        })
     }
+    // if player misses
+    if (player.isAttacking && player.framesCurrent ===4){
+        player.isAttacking = false
+    }
+
+// player get hit
+
 
     if ( 
         retangularCollision({
             rectangle1: enemy,
             rectangle2: player
         })
-        && enemy.isAttacking) {
+        && enemy.isAttacking && enemy.framesCurrent === 2
+        ) {
+        player.takeHit()
         enemy.isAttacking = false
-        player.health -= 20
-        document.querySelector('#playerHealth').style.width = player.health + '%'
+        
+        
+        gsap.to('#playerHealth',{
+            width: player.health + '%'
+        })
+    }
+
+    // if player misses
+    if (enemy.isAttacking && enemy.framesCurrent === 2){
+        enemy.isAttacking = false
     }
 
 // end game base on health
@@ -175,6 +301,8 @@ if (enemy.health <= 0 || player.health <=0){
 animate()
 
 window.addEventListener('keydown', (event) => {
+    if (!player.dead){
+
     
     switch (event.key) {
         case 'd':
@@ -192,7 +320,11 @@ window.addEventListener('keydown', (event) => {
         case ' ':
             player.attack()
             break
+    }
+}
 
+    if (!enemy.dead){
+     switch(event.key){
         case 'ArrowRight':
             keys.ArrowRight.pressed = true
             enemy.lastKey = 'ArrowRight'
@@ -207,6 +339,7 @@ window.addEventListener('keydown', (event) => {
             case 'ArrowDown':
                 enemy.attack ()
                 break
+    }   
     }
     
 
